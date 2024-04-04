@@ -34,6 +34,15 @@ app.use((req, res, next) => {
         'origin': origin,
         'headers': req.headers,
     });
+    // process and log response 
+    res.on('finish', () => {
+        console.log({
+            'action': 'response',
+            'status': res.statusCode,
+            'headers': res.getHeaders(),
+            'body': res.body ? res.body : 'none',
+        });
+    });
     next();
 });
 
@@ -149,12 +158,16 @@ app.get('/oauth2callback', async (req, res) => {
     });
 });
 
-
-app.post('/verify-recaptcha', async (req, res) => {
+app.post('/verify-captcha', async (req, res) => {
     const { token } = req.body;
     const url = `https://www.google.com/recaptcha/api/siteverify?secret=${recaptcha_secret_key}&response=${token}`;
     fetch(url, { method: 'POST' }).then(resp => resp.json()).then(
         data => {
+            console.log({
+                'action': 'verify-captcha',
+                'token': token,
+                'response': data,
+            })
             if (data.success) {
                 res.send({
                     success: true,
