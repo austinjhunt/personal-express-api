@@ -7,6 +7,9 @@ const OAuth2 = google.auth.OAuth2;
 
 // Load client secrets from a local file
 const CLIENT_SECRET_FILE = path.join(__dirname, 'secret', 'gmail-oauth-client.json');
+const RECAPTCHA_SECRET_FILE = path.join(__dirname, 'secret', 'recaptcha.json');
+const { recaptcha_secret_key } = JSON.parse(fs.readFileSync(RECAPTCHA_SECRET_FILE));
+
 const { client_secret, client_id, redirect_uris, refresh_token, allowed_origins } = JSON.parse(fs.readFileSync(CLIENT_SECRET_FILE)).web;
 const oauth2Client = new OAuth2(
     client_id, client_secret, process.env.NODE_ENV === 'production' ? redirect_uris.production : redirect_uris.development
@@ -146,6 +149,35 @@ app.get('/oauth2callback', async (req, res) => {
     });
 });
 
+
+app.post('/verify-recaptcha', async (req, res) => {
+    const { token } = req.body;
+    const url = `https://www.google.com/recaptcha/api/siteverify?secret=${recaptcha_secret_key}&response=${token}`;
+    fetch(url, { method: 'POST' }).then(resp => resp.json()).then(
+        data => {
+            if (data.success) {
+                res.send({
+                    success: true,
+                    message: 'Recaptcha verified successfully',
+                });
+
+            } else {
+                res.send({
+                    success: false,
+                    message: 'Recaptcha verification failed',
+                });
+            }
+        }
+    ).catch(error => {
+        console.error('Failed to verify recaptcha:', error);
+        res.status(500).send({
+            success: false,
+            error: 'Failed to verify recaptcha',
+            errorDetail: error.toString(),
+        });
+    });
+
+});
 
 
 app.post('/send-email', async (req, res) => {
