@@ -1,0 +1,13 @@
+# Docker-compose express js container 
+version: '3' 
+services:
+  express_api:
+    build: .
+    image: austinjhunt/express_api
+    expose: 
+      - "5000"  
+    volumes:
+      - ./secret:/usr/src/app/secret
+    environment:
+      - NODE_ENV=production
+      - PORT=5000
